@@ -35,11 +35,9 @@ Vue.component('product', {
     <button v-on:click="addToCart" 
     :disabled="!inStock"
     :class="{ disabledButton: !inStock }">Add to cart</button>
-    
-    <div class="cart">
-    <p>Cart({{cart}})</p>
-    </div>
-    
+
+    <button v-on:click="removeFromCart">Remove from cart</button>
+
     </div>
     
     </div>
@@ -61,10 +59,9 @@ Vue.component('product', {
                     variantId: 2235, 
                     variantColor: "blue",
                     variantImage: './assets/vmSocks-blue-onWhite.jpg',
-                    variantQuantity: 0,
+                    variantQuantity: 5,
                 },
             ],
-            cart: 0,
             
             url: 'https://www.w3schools.com/tags/att_a_href.asp', 
             description: 'This is a detailed description.',
@@ -74,14 +71,14 @@ Vue.component('product', {
     },
     methods: {
         addToCart: function () {
-            this.cart += 1; 
+            this.$emit('add-to-cart', this.variants[this.selectedVariant].variantId);
         },
         updateProduct: function (index) {
             this.selectedVariant = index;
             // console.log(index);
         },
         removeFromCart: function () {
-            this.cart -= 1;
+            this.$emit('remove-from-cart', this.variants[this.selectedVariant].variantId);
         },
     },
     computed: {
@@ -124,5 +121,15 @@ var app = new Vue({
     data: {
         premium: true,
         productDetail: 'This is the detail description about the project.',
-    } 
+        cart: [],
+    },
+    methods: {
+        updateCartAdd(id) {
+            this.cart.push(id);
+        },
+        updateCartRemove(id) {
+            var index = this.cart.indexOf(id);
+            if (index !== -1) this.cart.splice(index, 1);
+        }
+    }
 });
