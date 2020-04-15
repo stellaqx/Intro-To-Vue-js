@@ -1,5 +1,7 @@
 Vue.config.devtools = true;
 
+var eventBus = new Vue();
+
 Vue.component('product', {
     // property binding is just like class binding
     props: {
@@ -38,22 +40,9 @@ Vue.component('product', {
     
     <button v-on:click="removeFromCart">Remove from cart</button>
     
-    </div>
+    <product-tabs :reviews="reviews"></product-tabs>
 
-    <div>
-      <h2>Reviews</h2>
-      <p v-if="reviewCount==0">There are no reviews yet.</p>
-      <ul>
-      <li v-for="review in reviews">
-        <p>{{ review.name }}</p>
-        <p>{{ review.rating }}</p>
-        <p>{{ review.review }}</p>
-        <p>{{ review.recommendation }}</p>
-      </li>
-      </ul>
     </div>
-    
-    <product-review @review-submitted="addReview"></product-review>
     
     </div>
     `,
@@ -93,9 +82,6 @@ Vue.component('product', {
             this.selectedVariant = index;
             // console.log(index);
         },
-        addReview: function(productReview) {
-            this.reviews.push(productReview);
-        },
         removeFromCart: function () {
             this.$emit('remove-from-cart', this.variants[this.selectedVariant].variantId);
         },
@@ -117,10 +103,13 @@ Vue.component('product', {
         onSaleMsg() {
             if (this.onSale) return this.brand + ' ' + this.product + ' is on sale.';
             return '';
-        },
-        reviewCount() {
-            return this.reviews.length;
-        },
+        }
+    },
+    // life cycle hook, code you'd like to run as soon as the component is mounted to the DOM
+    mounted() {
+        eventBus.$on('review-submitted', productReview => {
+            this.reviews.push(productReview);
+        });
     }
 });
 
@@ -141,24 +130,24 @@ Vue.component('product-detail', {
 Vue.component('product-review', {
     template: `
     <form class="review-form" @submit.prevent ="onSubmit">
-
+    
     <p :hidden="!errors.length">
     <b> Please correct the following error(s). </b>
     <ul>
     <li v-for="error in errors">{{ error }}</li>
     </ul>
     </p>
-
+    
     <p>
     <label for="name"> Name: </label>
     <input id="name" v-model="name">
     </p>
-
+    
     <p>
     <label for="review"> Review: </label>
     <textarea id="review" v-model="review"></textarea>
     </p>
-
+    
     <p>
     <label for="rating"> Rating: </label>
     <select id="rating" v-model.number="rating">
@@ -169,7 +158,7 @@ Vue.component('product-review', {
     <option>1</option>
     </select>
     </p>
-
+    
     <p>
     <label for="recommendation"> Would you recommend this product: </label>
     <select id="recommendation" v-model="recommendation">
@@ -177,11 +166,11 @@ Vue.component('product-review', {
     <option>NO</option>
     </select>
     </p>
-
+    
     <p>
     <input type="submit" value="Submit">
     </p>
-
+    
     </form>
     `,
     data() {
@@ -203,7 +192,7 @@ Vue.component('product-review', {
                     rating: this.rating,
                     recommendation: this.recommendation,
                 }
-                this.$emit("review-submitted", productReview);
+                eventBus.$emit("review-submitted", productReview);
                 // our form fields reset value after submitting
                 this.name = null;
                 this.review = null;
@@ -214,10 +203,56 @@ Vue.component('product-review', {
                 if (!this.name) this.errors.push("Name required.");
                 if (!this.review) this.errors.push("Review required.");
                 if (!this.rating) this.errors.push("Rating required.");
-                if (!this.recommendation) this.errors.push("Recommendation required.")
+                if (!this.recommendation) this.errors.push("Recommendation required.");
             }
         }
     }, 
+});
+
+Vue.component("product-tabs", {
+    props: {
+        reviews: {
+            type: Array,
+            required: true
+        }
+    },
+    template: `
+    <div>
+    <span class="tab"
+    :class="{ activeTab: selectedTab == tab}"
+    v-for="(tab, index) in tabs"
+    :key="index"
+    @click="updateSelectedTab(tab)">
+    {{ tab }}
+    </span>
+
+    <div v-show="selectedTab === 'Reviews'">
+    <h2>Reviews</h2>
+    <p v-if="reviews.length==0">There are no reviews yet.</p>
+    <ul>
+    <li v-for="review in reviews">
+    <p>{{ review.name }}</p>
+    <p>{{ review.rating }}</p>
+    <p>{{ review.review }}</p>
+    <p>{{ review.recommendation }}</p>
+    </li>
+    </ul>
+    </div>
+    
+    <product-review v-show="selectedTab === 'Make a Review'"></product-review>
+    </div>
+    `,
+    data() {
+        return {
+            tabs: ['Reviews', 'Make a Review'],
+            selectedTab: 'Reviews',
+        }
+    },
+    methods: {
+        updateSelectedTab: function(selectedTab) {
+            this.selectedTab = selectedTab;
+        }
+    }
 });
 
 var app = new Vue({
